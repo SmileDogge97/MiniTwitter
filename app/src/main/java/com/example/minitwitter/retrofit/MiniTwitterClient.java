@@ -2,6 +2,16 @@ package com.example.minitwitter.retrofit;
 
 import com.example.minitwitter.common.Constantes;
 
+import java.security.cert.CertificateException;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -10,14 +20,14 @@ public class MiniTwitterClient {
     private MiniTwitterService miniTwitterService;
     private Retrofit retrofit;
 
-    public MiniTwitterClient(){
+    /*public MiniTwitterClient(){
         retrofit = new Retrofit.Builder()
                 .baseUrl(Constantes.API_MINITWITTER_BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         miniTwitterService = retrofit.create(MiniTwitterService.class);
-    }
+    }*/
 
     public static MiniTwitterClient getInstance(){
         if (instance == null){
@@ -28,5 +38,67 @@ public class MiniTwitterClient {
 
     public MiniTwitterService getMiniTwitterService(){
         return miniTwitterService;
+    }
+
+
+
+
+    //esto lo agregué apenas
+    OkHttpClient okHttpClient = UnsafeOkHttpClient.getUnsafeOkHttpClient();
+
+    public MiniTwitterClient() {
+
+        retrofit = new Retrofit.Builder()
+                .baseUrl(Constantes.API_MINITWITTER_BASE_URL)
+                .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        miniTwitterService = retrofit.create(MiniTwitterService.class);
+    }
+
+    public static class UnsafeOkHttpClient {
+        public static OkHttpClient getUnsafeOkHttpClient() {
+            try {
+                // Create a trust manager that does not validate certificate chains
+                final TrustManager[] trustAllCerts = new TrustManager[] {
+                        new X509TrustManager() {
+                            @Override
+                            public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                            }
+
+                            @Override
+                            public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                            }
+
+                            @Override
+                            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                                return new java.security.cert.X509Certificate[]{};
+                            }
+                        }
+                };
+
+                // Install the all-trusting trust manager
+                final SSLContext sslContext = SSLContext.getInstance("SSL");
+                sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+                // Create an ssl socket factory with our all-trusting manager
+                final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+                OkHttpClient.Builder builder = new OkHttpClient.Builder();
+                builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
+                builder.hostnameVerifier(new HostnameVerifier() {
+                    @Override
+                    public boolean verify(String hostname, SSLSession session) {
+                        return true;
+                    }
+                });
+
+                OkHttpClient okHttpClient = builder.build();
+                return okHttpClient;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
