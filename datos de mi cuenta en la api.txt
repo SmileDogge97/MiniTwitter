@@ -1,0 +1,12 @@
+{
+  "username": "franky_rivers",
+  "email": "franktutos@hotmail.com",
+  "password": "password",
+  "code": "UDEMYANDROID"
+}
+
+Datos de la cuenta info:
+{
+  "email": "info@minitwitter.com",
+  "password": "1234"
+}
